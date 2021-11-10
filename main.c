@@ -1,29 +1,28 @@
 #include <msp430.h> 
 
+#define BUTTON1 BIT1
+
 void main(void){
     WDTCTL = WDTPW + WDTHOLD;  // Stop WDT
-    P1DIR |= BIT2;
-    TA0CTL = TASSEL_2 + MC_1 + ID_3; //+TACLR;
-    TA0CCR0 = 6250 - 1; // Set maximum count value (PWM Period)
+    P1DIR |= BIT2;             // P1.2 to output
+    P1SEL |= BIT2;          // P1.2 to TA0.1
+    P1SEL2 &= ~BIT2;             // P1.2 to TA0.1
+
+    P1REN |=  BUTTON1;         // Enables resistor
+    P1OUT |=  BUTTON1;         // Pull-up Resistor
+
+    P1IE  |=  BUTTON1;         // Enables interrupt
+    P1IES |= ~BUTTON1;         // Falling edge select
+    P1IFG &= ~BUTTON1;         // Clears any flags
+    TA0CTL = TASSEL_2 + MC_1 + ID_3;
+    TA0CCR0 = 3125 - 1; // Set maximum count value (PWM Period)
     TA0CCR1 = 625; // initialize counter compare value
-
-    TA0CCTL0 |= CCIE;
-    TA0CCTL1 |= CCIE;
-    TA0CCTL0 &=~CCIFG;
-    TA0CCTL1 &=~CCIFG;
-
-    _enable_interrupts(); // Enter LPM0
+    TA0CCTL1 = OUTMOD_7;        // PWM set to reset
+    _enable_interrupts(); // Enter LPM0}
 }
 
-#pragma vector = TIMER0_A0_VECTOR       //define the interrupt service vector
-__interrupt void TA0_ISR (void)    // interrupt service routine
-{
-    P1OUT |= BIT2;
-    TA0CCTL0 &=~CCIFG;
-}
-
-#pragma vector = TIMER0_A1_VECTOR
-__interrupt void TA1_ISR (void) {
-    P1OUT &=~BIT2;
-    TA0CCTL1 &=~CCIFG;
+#pragma vector=PORT1_VECTOR         // Button interrupt
+__interrupt void Port_1(void) {
+    P1OUT ^=BIT2;
+    P1IFG &= ~BUTTON1;
 }
