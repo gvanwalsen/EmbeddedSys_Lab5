@@ -1,0 +1,29 @@
+#include <msp430.h> 
+
+void main(void){
+    WDTCTL = WDTPW + WDTHOLD;  // Stop WDT
+    P1DIR |= BIT2;
+    TA0CTL = TASSEL_2 + MC_1 + ID_3; //+TACLR;
+    TA0CCR0 = 6250 - 1; // Set maximum count value (PWM Period)
+    TA0CCR1 = 625; // initialize counter compare value
+
+    TA0CCTL0 |= CCIE;
+    TA0CCTL1 |= CCIE;
+    TA0CCTL0 &=~CCIFG;
+    TA0CCTL1 &=~CCIFG;
+
+    _enable_interrupts(); // Enter LPM0
+}
+
+#pragma vector = TIMER0_A0_VECTOR       //define the interrupt service vector
+__interrupt void TA0_ISR (void)    // interrupt service routine
+{
+    P1OUT |= BIT2;
+    TA0CCTL0 &=~CCIFG;
+}
+
+#pragma vector = TIMER0_A1_VECTOR
+__interrupt void TA1_ISR (void) {
+    P1OUT &=~BIT2;
+    TA0CCTL1 &=~CCIFG;
+}
